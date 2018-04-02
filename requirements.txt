@@ -1,1 +1,10 @@
-To update !!!
+certifi==2018.1.18
+dxfgrabber==0.8.4
+mkl-fft==1.0.0
+mkl-random==1.0.1
+numpy==1.14.2
+pandas==0.22.0
+python-dateutil==2.7.2
+pytz==2018.3
+Shapely==1.6.4.post1
+six==1.11.0
