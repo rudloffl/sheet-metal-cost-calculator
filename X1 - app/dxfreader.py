@@ -12,6 +12,7 @@ from shapely.geometry.point import Point
 from shapely.geometry import Polygon, LineString
 import dxfgrabber as dxfgb
 import os
+import matplotlib.pyplot as plt
 
 
 class DxfParser():
@@ -517,6 +518,52 @@ class DxfParser():
             bend_edge_length.append([LineString(x).length for x in candidate_edges])
 
         return bend_edge_distance, bend_edge_angle, bend_edge_length
+
+def plot_dxf(dxfdetails, filename, location):
+    fig = plt.figure(figsize=(15,15))
+    ax = fig.add_subplot(111)
+    for closedsection in dxfdetails['closed_patterns']:
+        poly = Polygon(closedsection)
+        x, y = poly.exterior.xy
+        plt.plot(x, y, color='g', alpha=0.5)
+
+    for opensection in dxfdetails['open_patterns']:
+        lines = LineString(opensection)
+        x, y = lines.xy
+        plt.plot(x, y, color='y', alpha=1)
+
+    for bendlines, tangents in zip(dxfdetails['bend_line'], dxfdetails['tangents_coords']):
+        lines = LineString(bendlines)
+        color = (np.random.rand(),np.random.rand(),np.random.rand())
+        x, y = lines.xy
+        plt.plot(x, y, color=color)
+        for tangent in tangents:
+            lines = LineString(tangent)
+            x, y = lines.xy
+            plt.plot(x, y, color=color)
+
+    centeraxis = dxfdetails['bend_center']
+    for center, angle, direction, radius in zip(centeraxis,
+                                               dxfdetails['bend_angle'],
+                                               dxfdetails['bend_direction'],
+                                               dxfdetails['bend_radius']):
+        ax.text(center[0], center[1], '{} - {} - {}'.format(angle, direction, radius), color='c')
+
+    poly = Polygon(dxfdetails['minimum_rectangle_coords'])
+    x, y = poly.exterior.xy
+    plt.plot(x, y, color='r')
+
+    poly = Polygon(dxfdetails['convex_hull_coords'])
+    x, y = poly.exterior.xy
+    plt.plot(x, y, color='b')
+
+    ax.set_aspect('equal')
+    #ax.set_xlim([280,290])
+    #ax.set_ylim([-90,-80])
+    #plt.show()
+    path = os.path.join(location, f'{filename}.png')
+    fig.savefig(path, format='png', dpi=90, bbox_inches='tight')
+
 
 if __name__ == "__main__":
     #List of all the dixs in the folder
