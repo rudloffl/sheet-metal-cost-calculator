@@ -3,7 +3,7 @@
 """
 Created on Sun Apr  1 21:56:10 2018
 
-@author: cricket
+@author: Laurent Rudloff
 """
 
 import math
@@ -34,7 +34,7 @@ class DxfParser():
         self.dxf = dxfgb.readfile(dxfpath)
 
         #Most common color calculation
-        colors = [element.color for element in self.dxf.modelspace() if element.linetype == 'CONTINUOUS'and element.dxftype != 'TEXT' and element.layer != 'SURFACES' and element.color in self.edge_color]
+        colors = [element.color for element in self.dxf.modelspace() if element.linetype == 'CONTINUOUS'and element.dxftype != 'TEXT' and element.color in self.edge_color and element.layer != 'SURFACES' ]
         self.color = np.argmax(np.bincount(colors))
         #print('color ID', self.color)
 
@@ -119,7 +119,7 @@ class DxfParser():
         """Populates information such as nuber of bends, direction"""
         axis = []
         tangents_coords = []
-        
+
         #List of axis creation
         tangents = [(element.start, element.end) for element in self.dxf.modelspace() if element.linetype == 'PHANTOM']
         tangentsangles = [np.round(self.angleline(LineString(tangentcoord)), self.roundigexp) for tangentcoord in tangents]
@@ -134,9 +134,9 @@ class DxfParser():
         for lines in possible_bendline:
             segment = np.round((lines.start, lines.end), decimals=self.roundigexp)[:,0:2]
             axis.append(tuple(map(tuple, segment)))
-        
+
         bend_index = []
-        
+
         for angle, radius, center in zip(self.details['bend_angle'], self.details['bend_radius'], self.details['bend_center']):
             #L= angle*R+(0.1594*ln(R/T)+0.51722)*T   
             thickness = self.details['thickness']
@@ -164,7 +164,6 @@ class DxfParser():
                 #print('NOK')
                 bend_index.append(sort_index[0])
                 tangents_coords.append([])
-                
 
 
         self.details['bend_line'] = [axis[k] for k in bend_index]
@@ -210,9 +209,8 @@ class DxfParser():
         closedpatterns, openpatterns = self._looping_calc(closedpatterns, patterns, limit=0)
 
         # Second round with some forgivness if needed
-        if len(openpatterns) > 1:
-            print(len(openpatterns))
-            print('round 2 !')
+        if len(openpatterns) > 0:
+            #print('round 2 !')
             closedpatterns, openpatterns = self._looping_calc(closedpatterns, openpatterns, limit=self.max_distance_correction)
 
         return (closedpatterns, openpatterns)
@@ -220,16 +218,24 @@ class DxfParser():
     def _looping_calc(self, closedpatterns, patterns, limit=0):
         """Routine used to create closed loops"""
         openpatterns = []
-        # Construcion of the different patterns
-        currentsegment = np.array(patterns[0])
-        del patterns[0]
         looping = True
 
+        # Step 1 : initiate the looping system
+        while True:
+            currentsegment = np.array(patterns[0])
+            del patterns[0]
+            if LineString((tuple(currentsegment[0]), tuple(currentsegment[-1]))).length <= limit and currentsegment.shape[0] != 2:
+                closedpatterns.append(currentsegment)
+            if len(patterns) == 0:
+                looping = False
+            break
+
+        # Step 2 : Increase the length of all the possible section
         while looping:
             initloop = False
             modifiedloop = False
-            for index, segment in enumerate(patterns):
 
+            for index, segment in enumerate(patterns):
                 start = tuple(np.array(segment[0]).tolist())
                 end = tuple(np.array(segment[-1]).tolist())
                 startsegment = tuple(np.round(currentsegment[0], self.roundigexp).tolist())
@@ -260,23 +266,13 @@ class DxfParser():
                     modifiedloop = True
                     break
 
-            # Is it actually closed?
-            if LineString((tuple(currentsegment[0]), tuple(currentsegment[-1]))).length <= limit:
-                closedpatterns.append(currentsegment)
-                # print('closed loop')
-                initloop = True
-                #modifiedloop = True
 
-            # The loop is not closed and we exhausted all the options
+            #we exhausted all the options
             if not modifiedloop:
                 openpatterns.append(currentsegment)
                 #print('Possible PB', openpatterns)
                 initloop = True
-                if 'possible_imperfection' not in self.details:
-                    self.details['possible_imperfection'] = []
-                temp = self.details['possible_imperfection']
-                temp.append((startsegment, endsegment))
-                self.details['possible_imperfection'] = temp
+
 
             # Finished a segment and need to initiate a new one
             if initloop:
@@ -290,6 +286,28 @@ class DxfParser():
                     currentsegment = np.array(patterns[0]) 
                     del patterns[0]
                     initloop = False
+                    # Is it actually closed?
+
+        # Step 3 : From all the new sections, are actually some of them closed
+        patternstodrop = []
+        for index, currentsegment in enumerate(openpatterns):
+            if LineString((tuple(currentsegment[0]), tuple(currentsegment[-1]))).length <= limit and currentsegment.shape[0] != 2:
+                closedpatterns.append(currentsegment)
+                patternstodrop.append(index)
+                # If we are approximating, we should track it
+                if limit != 0:
+                    if 'possible_imperfection' not in self.details:
+                        self.details['possible_imperfection'] = []
+                    temp = self.details['possible_imperfection']
+                    startsegment = tuple(np.round(currentsegment[0], self.roundigexp).tolist())
+                    endsegment = tuple(np.round(currentsegment[-1], self.roundigexp).tolist())
+                    temp.append((startsegment, endsegment))
+                    self.details['possible_imperfection'] = temp
+        patternstodrop.sort(reverse=True)
+
+        # Step 4 : let's drop the section that are actually closed
+        for todrop in patternstodrop:
+            del openpatterns[todrop]
 
 
         return (closedpatterns, openpatterns)
@@ -299,28 +317,28 @@ class DxfParser():
         areas = np.array([Polygon(poly).area for poly in self.details['closed_patterns']])
         lengths = np.array([Polygon(poly).length for poly in self.details['closed_patterns']])
         biggestarea = np.argmax(areas)
-        
+
         self.details['cut_length'] = lengths.sum()
         self.details['total_area'] = 2 * areas[biggestarea] - areas.sum()
-        
+
         self.mainpattern = Polygon(self.details['closed_patterns'][biggestarea])
-        
+
         self.details['minimum_rectangle_coords'] = self.mainpattern.minimum_rotated_rectangle.exterior.coords[:]
         self.details['minimum_rectangle_area'] = Polygon(self.details['minimum_rectangle_coords']).area
         point1 = Point(self.details['minimum_rectangle_coords'][0])
         point2 = Point(self.details['minimum_rectangle_coords'][1])
         point3 = Point(self.details['minimum_rectangle_coords'][2])
-        
+
         dim1 = point1.distance(point2)
         dim2 = point2.distance(point3)
         self.details['minimum_rectangle_dim1'] = np.array((dim1, dim2)).max()
         self.details['minimum_rectangle_dim2'] = np.array((dim1, dim2)).min()
-        
+
         self.details['no_hole_area'] = self.mainpattern.area
-        
+
         self.details['num_closed_patterns'] = len(self.details['closed_patterns'])
         self.details['num_open_patterns'] = len(self.details['open_patterns'])
-        
+
         self.details['convex_hull_coords'] = self.mainpattern.convex_hull.exterior.coords[:]
         self.details['convex_hull_area'] = Polygon(self.details['convex_hull_coords']).area
 
@@ -386,7 +404,6 @@ class DxfParser():
         self.load_dxf(dxfpath)
         # Cutting patterns
         self.details['closed_patterns'], self.details['open_patterns']= self._pattern_details(self.edge_color)
-
         # Hetching pattern
         # TO DO
 
