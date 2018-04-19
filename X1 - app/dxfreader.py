@@ -557,7 +557,7 @@ def plot_dxf(dxfdetails, filename, location):
     x, y = poly.exterior.xy
     plt.plot(x, y, color='b')
 
-    ax.set_aspect('equal')
+    ax.set_aspect('scaled')
     #ax.set_xlim([280,290])
     #ax.set_ylim([-90,-80])
     #plt.show()
