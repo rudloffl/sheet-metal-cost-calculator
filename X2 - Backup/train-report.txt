@@ -1,0 +1,28 @@
+#############################
+##     TRAINING REPORT     ##
+##   $time    ##
+#############################
+
+Dataset size : $datasize
+
+#############################
+##          VAMAT          ##
+#############################
+
+MSE   (euros2) : $vamat_mse
+MAPE       (%) : $vamate_mape 
+dataset size   : $vamatsize
+
+#############################
+##        VALAJOUT         ##
+#############################
+
+MSE   (euros2) : $valajout_mse
+MAPE       (%) : $valajout_mape 
+dataset size   : $valajoutsize
+
+
+Worst predictions VAMAT:
+
+  Thickness  |  Part#  |  MSE 
+-------------+---------+-------

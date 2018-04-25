@@ -1,0 +1,27 @@
+##################################
+##        $filename        ##
+##################################
+
+Date : $date
+
+VAMAT          (euros) : $vamat
+MSE       (+/- euros2) : $vamat_mse
+MAPE           (+/- %) : $vamat_mape
+
+VALAJOUT       (euros) : $valajout
+MSE       (+/- euros2) : $vamat_mse
+MAPE           (+/- %) : $vamat_mape
+
+VALTOT         (euros) : $valtot
+
+##################################
+##         GENERAL INFO         ##
+##################################
+
+Thickness              (mm) : $thickness
+Rectangle dim1         (mm) : $minimum_rectangle_dim1
+Rectangle dim2         (mm) : $minimum_rectangle_dim2
+Rectangle surface     (mm2) : $minimum_rectangle_area
+Closed pattern count   (mm) : $num_closed_patterns
+Open pattern count          : $num_open_patterns
+Bend count                  : $bend_count
