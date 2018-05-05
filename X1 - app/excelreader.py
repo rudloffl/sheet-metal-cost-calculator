@@ -18,6 +18,7 @@ class PriceReader():
 
     def read_xls(self, filename):
         self.priceset = pd.read_excel(os.path.join(self.filepath, filename))
+        return self.priceset
 
     def get_prices(self):
         return self.priceset

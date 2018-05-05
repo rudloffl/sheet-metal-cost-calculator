@@ -4,15 +4,15 @@
 
 Date : $date
 
-VAMAT          (euros) : $vamat
-MSE       (+/- euros2) : $vamat_mse
-MAPE           (+/- %) : $vamat_mape
+VAMAT          (euros) : $VAMAT
+MSE       (+/- euros2) : $VAMAT_MSE
+MAPE           (+/- %) : $VAMAT_MAPE
 
-VALAJOUT       (euros) : $valajout
-MSE       (+/- euros2) : $vamat_mse
-MAPE           (+/- %) : $vamat_mape
+VALAJOUT       (euros) : $VALAJOUT
+MSE       (+/- euros2) : $VALAJOUT_MSE
+MAPE           (+/- %) : $VALAJOUT_MAPE
 
-VALTOT         (euros) : $valtot
+VALTOT         (euros) : $VALTOT
 
 ##################################
 ##         GENERAL INFO         ##

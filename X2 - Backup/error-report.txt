@@ -1,0 +1,13 @@
+##################################
+##        $filename        ##
+##################################
+
+Date : $date
+
+I'm sorry, something went wrong :-(
+
+To fix the problem:
+- Is the layer status correct ?
+- Is the part in sheetmetal mode ?
+- Is the Flat_view correct ?
+- Is the thickness correct ?
