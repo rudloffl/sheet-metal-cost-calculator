@@ -66,7 +66,7 @@ if len(calcvamat.details) != 0 and len(calcvalajout.details) != 0:
 scanning = True
 
 while scanning:
-    time.sleep(1)
+    time.sleep(5)
     print('Scanning folders')
     for folder, extension, task in folderstowatch:
         files = [file for file in os.listdir(folder) if file.endswith(extension)]

@@ -12,12 +12,14 @@ import lightgbm as lgb
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-#from sklearn.model_selection import GridSearchCV
 from scipy import stats
 from scipy.special import inv_boxcox
 from sklearn.externals import joblib
 import os
 import pickle
+from hyperopt import hp, tpe
+from hyperopt.fmin import fmin
+from sklearn.model_selection import cross_val_score
 
 def mean_absolute_percentage_error(y_true, y_pred): 
     y_true, y_pred = np.array(y_true), np.array(y_pred)
@@ -45,7 +47,7 @@ class Costcalculator(object):
             self.details = {}
             self.scaler = StandardScaler()
 
-    def fit(self, dataset):
+    def fit(self, dataset, max_evals=100):
         """Method used to train model"""
 
         #1 - Columns used definition depending on target
@@ -107,7 +109,72 @@ class Costcalculator(object):
         X_test_scaled  = self.scaler.transform(X_test[self.limitedset])
 
         #6 - Model training
+        def objective(params):
+            params = {
+                'num_leaves': int(params['num_leaves']),
+                'min_data_in_leaf': int(params['min_data_in_leaf']),
+                'min_child_weight': params['min_child_weight'],
+                #'n_estimators': int(params['n_estimators']),
+                'colsample_bytree': params['colsample_bytree'],
+                'bagging_fraction': params['bagging_fraction'],
+                'bagging_freq': params['bagging_freq'],
+                'reg_alpha': params['reg_alpha'],
+                'reg_lambda': params['reg_lambda'],
+                'max_depth':int(params['max_depth']),
+                'learning_rate':params['learning_rate'],
+                }
+            
+            clf = lgb.LGBMRegressor(objective='regression', n_estimators=200, **params)
+
+            
+            score = cross_val_score(clf, X_train_scaled, y_train['logtarget'], scoring='neg_mean_absolute_error', cv=3, n_jobs=-2).mean()
+            print("MSE {:.3f} - params {}".format(score, params))
+            return -score
+
+        space = {
+            'num_leaves': hp.uniform('num_leaves', 5, 40),
+            'min_data_in_leaf': hp.uniform('min_data_in_leaf',10, 40),
+            'min_child_weight': hp.uniform('min_child_weight', 0.001, 20),
+            #'n_estimators': hp.uniform('n_estimators', 100, 500),
+            'colsample_bytree': hp.uniform('colsample_bytree', 0., 1.0),
+            'bagging_fraction': hp.uniform('bagging_fraction', 0., 1.0),
+            'bagging_freq': hp.randint('bagging_freq', 15),
+            'reg_alpha': hp.loguniform('reg_alpha', -3, 3),
+            'reg_lambda': hp.loguniform('reg_lambda', -3, 3),
+            'max_depth': hp.uniform('max_depth', 3, 15),
+            'learning_rate': hp.uniform('learning_rate', 0.001, .1),
+        }
+
+        best = fmin(fn=objective,
+                    space=space,
+                    algo=tpe.suggest,
+                    max_evals=max_evals)
+
+        params = {
+        'num_leaves': int(best['num_leaves']),
+        'min_data_in_leaf': int(best['min_data_in_leaf']),
+        'min_child_weight': best['min_child_weight'],
+        #'n_estimators': int(best['n_estimators']),
+        'colsample_bytree': best['colsample_bytree'],
+        'bagging_fraction': best['bagging_fraction'],
+        'bagging_freq': best['bagging_freq'],
+        'reg_alpha': best['reg_alpha'],
+        'reg_lambda': best['reg_lambda'],
+        'max_depth':int(best['max_depth']),
+        'learning_rate':best['learning_rate'],
+        }
+
+        self.estimator.set_params(**params)
+
         self.estimator.fit(X_train_scaled, y_train['logtarget'])
+
+
+
+
+
+
+
+
 
         #7 - Performance calculation
         prediction_lgbm_log = inv_boxcox(self.estimator.predict(X_test_scaled), self.lmbda)
