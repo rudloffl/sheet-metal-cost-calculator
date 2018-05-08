@@ -127,7 +127,7 @@ class Costcalculator(object):
             clf = lgb.LGBMRegressor(objective='regression', n_estimators=200, **params)
 
             
-            score = cross_val_score(clf, X_train_scaled, y_train['logtarget'], scoring='neg_mean_absolute_error', cv=3, n_jobs=-2).mean()
+            score = cross_val_score(clf, X_train_scaled, y_train['logtarget'], scoring='neg_mean_squared_error', cv=3, n_jobs=-2).mean()
             print("MSE {:.3f} - params {}".format(score, params))
             return -score
 
