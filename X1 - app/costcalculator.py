@@ -47,7 +47,7 @@ class Costcalculator(object):
             self.details = {}
             self.scaler = StandardScaler()
 
-    def fit(self, dataset, max_evals=10):
+    def fit(self, dataset, max_evals=100):
         """Method used to train model"""
 
         #1 - Columns used definition depending on target
