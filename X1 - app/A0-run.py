@@ -16,7 +16,7 @@ from reportgen import ReportGen
 from datapreparation import DataPrep
 from excelreader import PriceReader
 from costcalculator import Costcalculator
-from scipy.stats import skew
+#from scipy.stats import skew
 
 
 # Initiate the folders
@@ -66,7 +66,7 @@ if len(calcvamat.details) != 0 and len(calcvalajout.details) != 0:
 scanning = True
 
 while scanning:
-    time.sleep(5)
+    time.sleep(2)
     print('Scanning folders')
     for folder, extension, task in folderstowatch:
         files = [file for file in os.listdir(folder) if file.endswith(extension)]
@@ -101,7 +101,7 @@ while scanning:
                             except KeyError:
                                 details['VALAJOUT_MSE'] = 'Unknown Thickness'
                                 details['VALAJOUT_MAPE'] = 'Unknown Thickness'
-                            
+
                             details['VALTOT'] = details['VAMAT']+details['VALAJOUT']
                             details['bend_count'] = partinfo.iloc[0]['bend_count']
                             reportgen.costreport(details)
@@ -140,15 +140,19 @@ while scanning:
 
             #Triggers the model training from availables DXFs
             elif task == 'trainxls':
-                #try:
-                priceset = pricereader.read_xls(files[0])
-                os.remove(os.path.join(folder, files[0]))
-                asmset = dataprep.format_fit(priceset)
-                #except:
-                #    print('the file was probably read only')
-                asmset.to_csv('../X2 - Backup/trainset.csv')
-                dataprep.reset_dataset()
-
-                
+                try:
+                    priceset = pricereader.read_xls(files[0])
+                    os.remove(os.path.join(folder, files[0]))
+                    asmset = dataprep.format_fit(priceset)
+                    asmset.to_csv('../X2 - Backup/trainset.csv')
+                    calcvamat.fit(asmset)
+                    calcvalajout.fit(asmset)
+                    dataprep.reset_dataset()
+                    reportgen.fitreport(VAMAT={'details':calcvamat.details,
+                                   'worst':calcvamat.worst,},
+                            VALAJOUT={'details':calcvalajout.details,
+                                   'worst':calcvalajout.worst,},)
+                except:
+                    print('the file was probably read only')
 
 

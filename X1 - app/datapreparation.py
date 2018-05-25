@@ -163,7 +163,7 @@ class DataPrep(object):
     def add_dxf(self, filename, details):
         self.dataset.loc[filename] = [details.get(x, 'ERROR') for x in self.dataset.columns]
         print(f'{filename} added to the dataset')
-        self.dataset.to_csv('extract.csv')
+        self.dataset.to_csv('../X2 - Backup/extract.csv')
 
     def get_part_specs(self, filename, details):
         partspec = pd.DataFrame(columns=self.columns)
