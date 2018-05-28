@@ -47,7 +47,7 @@ class Costcalculator(object):
             self.details = {}
             self.scaler = StandardScaler()
 
-    def fit(self, dataset, max_evals=100):
+    def fit(self, dataset, max_evals=5):
         """Method used to train model"""
 
         #1 - Columns used definition depending on target
@@ -91,6 +91,9 @@ class Costcalculator(object):
                     dataset = dataset[np.logical_not(mask)]
         dataset = dataset.fillna(0)
         self.details['datasetsize']=dataset.shape[0]
+
+        # We drop all the value inferior to 0
+        dataset = dataset[dataset[self.target]>0]
 
         #3 - Train - Test creation
 
@@ -257,7 +260,7 @@ class Costcalculator(object):
 if __name__ == '__main__':
     calcvamat    = Costcalculator(qhigh=.95, qlow=.02, target='VAMAT')
     #dataset = pd.read_csv('../Y3 - Sample data/Z2 - datasetprepclean.csv', index_col = 0)
-    dataset = pd.read_csv('../X2 - Backup/trainset.csv', index_col = 0)
+    dataset = pd.read_csv('../X2 - Backup/trainset.csv', index_col = 'COART')
     print(calcvamat.details)
     calcvamat.fit(dataset)
     #calcvamat.save_model()
